@@ -1,2 +1,2 @@
 # vmloragateway
-vmloragateway create visual gateway for test loar network (NS+NC+AS)
+Visual Machine(Lora Gateway) connect to lora-gateway-bridge for test loar server benchmark or others(NS+NC+AS)

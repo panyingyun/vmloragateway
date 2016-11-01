@@ -1,0 +1,37 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "JiTaaqMJ0WfwRKycs3y6rDKZgAk=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
+			"revisionTime": "2016-08-29T20:23:21Z"
+		},
+		{
+			"checksumSHA1": "HabHz9Fh89GYXP2mPZzHnNY3gfM=",
+			"path": "github.com/brocaar/lorawan",
+			"revision": "5dcb3accd0694379a4db94be75fa721867c59739",
+			"revisionTime": "2016-09-18T07:42:22Z"
+		},
+		{
+			"checksumSHA1": "nLZf/iMYZv0BsLGR0UOn/y3AJug=",
+			"path": "github.com/jacobsa/crypto/cmac",
+			"revision": "42daa9d04c68a12aca47231abd9fb7f8aac27ef7",
+			"revisionTime": "2016-04-10T22:58:39Z"
+		},
+		{
+			"checksumSHA1": "fLhDe/RAyAOWY2i2zCcu6V7o9EE=",
+			"path": "github.com/jacobsa/crypto/common",
+			"revision": "42daa9d04c68a12aca47231abd9fb7f8aac27ef7",
+			"revisionTime": "2016-04-10T22:58:39Z"
+		},
+		{
+			"checksumSHA1": "z0TCcB+cPeQX8+jn7HvUDeoMDS8=",
+			"path": "github.com/urfave/cli",
+			"revision": "3eb41f1bb122ac7535cc7b32db6b78b541879726",
+			"revisionTime": "2016-10-30T01:45:05Z"
+		}
+	],
+	"rootPath": "github.com/panyingyun/vmloragateway"
+}
