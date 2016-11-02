@@ -22,10 +22,18 @@ func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBS
 	c := cron.New()
 	c.AddFunc(spec_heartbeat, func() {
 		log.Println("heartbeat")
+		err := backend.SendHeartbeat(gwid)
+		if err != nil {
+			log.Warnf("SendHeartbeat err = %v", err)
+		}
 	})
 
 	c.AddFunc(spec_stat, func() {
 		log.Println("stat")
+		err := backend.SendStatData(conf.Latitude, conf.Longtitude, conf.Altitude, gwid)
+		if err != nil {
+			log.Warnf("SendStatData err = %v", err)
+		}
 	})
 	return &HBServer{
 		backend: backend,
@@ -37,8 +45,10 @@ func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBS
 
 func (s *HBServer) Start() {
 	s.cron.Start()
+	log.Info("heartbeat server start")
 }
 
 func (s *HBServer) Stop() {
 	s.cron.Stop()
+	log.Info("heartbeat server stop")
 }

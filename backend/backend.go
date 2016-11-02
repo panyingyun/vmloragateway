@@ -1,11 +1,13 @@
 package backend
 
 import (
-	_ "encoding/base64"
+	"encoding/hex"
 	"errors"
-	_ "fmt"
+	"fmt"
+	"math/rand"
 	"net"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/panyingyun/vmloragateway/gateway"
@@ -15,6 +17,7 @@ var errBackend = errors.New("backend create fail!")
 
 type Backend struct {
 	conn   *net.UDPConn
+	addr   *net.UDPAddr
 	rxChan chan gateway.PullRespPacket
 	closed bool
 	wg     sync.WaitGroup
@@ -33,6 +36,7 @@ func NewBackend(bind string) (*Backend, error) {
 	}
 
 	b := &Backend{
+		addr:   addr,
 		conn:   connect,
 		rxChan: make(chan gateway.PullRespPacket),
 		closed: false,
@@ -61,14 +65,71 @@ func (b *Backend) Close() error {
 	return nil
 }
 
-//Send PullData Command(Just a heartbeat every 10ms)
-func (b *Backend) SendPullData() error {
+func (b *Backend) sendPullData() error {
 
 	return nil
 }
 
+//Send PullData Command(Just a heartbeat every 10ms)
+func (b *Backend) SendHeartbeat(mac string) error {
+	//generate heartbeat...
+	var heartbeat gateway.PullDataPacket
+	heartbeat.ProtocolVersion = 2
+	heartbeat.RandomToken = uint16(rand.Uint32())
+	macbt, err := covertStrToByte(mac)
+	if err != nil {
+		return err
+	}
+	heartbeat.GatewayMAC = macbt
+
+	//send by udp
+	hbyte, err := heartbeat.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	_, err = b.conn.Write(hbyte)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //Send (Just a stat every 30ms)
-func (b *Backend) SendStatData() error {
+func (b *Backend) SendStatData(latitude float64, longtitude float64, altitude int32, mac string) error {
+	//generate gateway stat ...
+	var stat gateway.PushDataPacket
+	stat.ProtocolVersion = 2
+	stat.RandomToken = uint16(rand.Uint32())
+	macbt, err := covertStrToByte(mac)
+	//log.Info("macbt = ", macbt)
+	if err != nil {
+		return err
+	}
+	stat.GatewayMAC = macbt
+	var payload gateway.PushDataPayload
+	var st gateway.Stat
+	st.Time = gateway.ExpandedTime(time.Now())
+	st.ACKR = 100.0
+	st.Alti = altitude
+	st.Lati = latitude
+	st.Long = longtitude
+	st.RXFW = 100
+	st.RXNb = 100
+	st.RXOK = 100
+	st.DWNb = 0
+	payload.Stat = &st
+	stat.Payload = payload
+
+	//send by udp
+	stBytes, err := stat.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	_, err = b.conn.Write(stBytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -108,4 +169,17 @@ func (b *Backend) handlePullAck() {
 }
 func (b *Backend) handlePullResp() {
 
+}
+
+func covertStrToByte(mac string) ([8]byte, error) {
+	var macbytes [8]byte
+	b, err := hex.DecodeString(mac)
+	if err != nil {
+		return macbytes, err
+	}
+	if len(b) != len(macbytes) {
+		return macbytes, fmt.Errorf("macbytes: exactly %d bytes are expected", len(b))
+	}
+	copy(macbytes[:], b)
+	return macbytes, nil
 }
