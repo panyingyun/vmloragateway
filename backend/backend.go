@@ -8,19 +8,14 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/panyingyun/vmloragateway/gateway"
 )
 
 var errBackend = errors.New("backend create fail!")
 
-type udpPacket struct {
-	addr *net.UDPAddr
-	data []byte
-}
-
 type Backend struct {
 	conn   *net.UDPConn
-	rxChan chan udpPacket
-	txChan chan udpPacket
+	rxChan chan gateway.PullRespPacket
 	closed bool
 	wg     sync.WaitGroup
 }
@@ -39,28 +34,17 @@ func NewBackend(bind string) (*Backend, error) {
 
 	b := &Backend{
 		conn:   connect,
-		rxChan: make(chan udpPacket),
-		txChan: make(chan udpPacket),
+		rxChan: make(chan gateway.PullRespPacket),
 		closed: false,
 	}
 
 	//handle receivePacket
 	go func() {
 		b.wg.Add(1)
-		err := b.receivePackets()
-		if !b.closed {
-			log.Fatal(err)
-		}
-		b.wg.Done()
-	}()
-
-	//handle sendPacket
-	go func() {
-		b.wg.Add(1)
-		err := b.sendPacket()
-		if !b.closed {
-			log.Fatal(err)
-		}
+		b.receivePackets()
+		//		if !b.closed {
+		//			log.Fatal(err)
+		//		}
 		b.wg.Done()
 	}()
 	return b, nil
@@ -74,6 +58,22 @@ func (b *Backend) Close() error {
 	}
 	log.Info("backend: handling last packets")
 	b.wg.Wait()
+	return nil
+}
+
+//Send PullData Command(Just a heartbeat every 10ms)
+func (b *Backend) SendPullData() error {
+
+	return nil
+}
+
+//Send (Just a stat every 30ms)
+func (b *Backend) SendStatData() error {
+	return nil
+}
+
+//Send PushData Command(transmitt lora node data here)
+func (b *Backend) SendPushData() error {
 	return nil
 }
 
@@ -99,6 +99,13 @@ func (b *Backend) receivePackets() error {
 	return nil
 }
 
-func (b *Backend) sendPacket() error {
-	return nil
+func (b *Backend) handlePushAck() {
+
+}
+
+func (b *Backend) handlePullAck() {
+
+}
+func (b *Backend) handlePullResp() {
+
 }
