@@ -8,8 +8,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var spec_heartbeat = "0-59/10 * * * * *"
-var spec_stat = "0-59/30 * * * * *"
+var spec_heartbeat = "@every 10s"
+var spec_stat = "@every 30s"
 
 type HBServer struct {
 	backend *backend.Backend

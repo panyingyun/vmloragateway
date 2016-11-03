@@ -18,7 +18,7 @@ var errBackend = errors.New("backend create fail!")
 type Backend struct {
 	conn   *net.UDPConn
 	addr   *net.UDPAddr
-	rxChan chan gateway.PullRespPacket
+	txChan chan gateway.TXPK
 	closed bool
 	mac    [8]byte
 	stat   *gateway.Stat
@@ -57,7 +57,7 @@ func NewBackend(bind string, mac string, longtitude float64, latitude float64, a
 	b := &Backend{
 		addr:   addr,
 		conn:   connect,
-		rxChan: make(chan gateway.PullRespPacket),
+		txChan: make(chan gateway.TXPK),
 		closed: false,
 		mac:    macbytes,
 		stat:   &gwstat,
@@ -83,7 +83,54 @@ func (b *Backend) Close() error {
 	return nil
 }
 
-func (b *Backend) sendPullData() error {
+//Send Join or comfirm/uncomfirm uplink data from lora node
+func (b *Backend) SendPushData(rxpk gateway.RXPK) error {
+	//generate gateway stat ...
+	var rxPkt gateway.PushDataPacket
+	rxPkt.ProtocolVersion = 2
+	rxPkt.RandomToken = uint16(rand.Uint32())
+
+	rxPkt.GatewayMAC = b.mac
+	var payload gateway.PushDataPayload
+	payload.RXPK = append(payload.RXPK, rxpk)
+	rxPkt.Payload = payload
+
+	//send by udp
+	stBytes, err := rxPkt.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	_, err = b.conn.Write(stBytes)
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{
+		"token": rxPkt.RandomToken,
+	}).Info("backend: PushData(Join or Uplink) -->")
+	return nil
+}
+
+//Send TX_ACK When received PULL_RESP packet
+func (b *Backend) sendTXACK(token uint16) error {
+	//generate heartbeat...
+	var txack gateway.TXACKPacket
+	txack.ProtocolVersion = 2
+	txack.RandomToken = token
+	txack.GatewayMAC = b.mac
+
+	//send by udp
+	hbyte, err := txack.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	_, err = b.conn.Write(hbyte)
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{
+		"token": txack.RandomToken,
+	}).Info("backend: TXACK -->")
 
 	return nil
 }
@@ -136,12 +183,7 @@ func (b *Backend) SendStatData() error {
 	}
 	log.WithFields(log.Fields{
 		"token": stPkt.RandomToken,
-	}).Info("backend: PushData -->")
-	return nil
-}
-
-//Send PushData Command(transmitt lora node data here)
-func (b *Backend) SendPushData() error {
+	}).Info("backend: PushData(Stat) -->")
 	return nil
 }
 
@@ -213,7 +255,26 @@ func (b *Backend) handlePullAck(data []byte) error {
 
 func (b *Backend) handlePullResp(data []byte) error {
 	log.Println("handlePullResp")
+	var p gateway.PullRespPacket
+	err := p.UnmarshalBinary(data)
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{
+		"token": p.RandomToken,
+	}).Info("backend: PullResp -->")
+
+	log.WithFields(log.Fields{
+		"TXPK": p.Payload.TXPK,
+	}).Info("backend: PullResp -->")
+
+	b.sendTXACK(p.RandomToken)
+	b.txChan <- p.Payload.TXPK
 	return nil
+}
+
+func (b *Backend) TXChan() chan gateway.TXPK {
+	return b.txChan
 }
 
 func covertStrToByte(mac string) ([8]byte, error) {
