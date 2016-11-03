@@ -8,7 +8,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/panyingyun/vmloragateway/backend"
 	"github.com/panyingyun/vmloragateway/config"
-	"github.com/panyingyun/vmloragateway/gateway"
 	"github.com/panyingyun/vmloragateway/server"
 	"github.com/urfave/cli"
 )
@@ -22,11 +21,13 @@ func run(c *cli.Context) error {
 	log.Info(gatewayid)
 
 	// Connect to Lora-Gateway-Bridge
-	backend, err := backend.NewBackend(conf.ServerAddr)
-	log.Infof("backend = %v, err = %v", backend, err)
+	backend, err := backend.NewBackend(conf.ServerAddr, gatewayid, conf.Longtitude, conf.Latitude, conf.Altitude)
+	if err != nil {
+		return err
+	}
+	// log.Infof("backend = %v, err = %v", backend, err)
 
 	// Start Send Gateway Stat every 30s
-	log.Infof("PullACK = %v", gateway.PullACK)
 	hbserver := server.NewHBServer(backend, conf, gatewayid)
 	hbserver.Start()
 	defer hbserver.Stop()

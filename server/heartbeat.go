@@ -21,16 +21,16 @@ type HBServer struct {
 func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBServer {
 	c := cron.New()
 	c.AddFunc(spec_heartbeat, func() {
-		log.Println("heartbeat")
-		err := backend.SendHeartbeat(gwid)
+		//log.Println("heartbeat")
+		err := backend.SendHeartbeat()
 		if err != nil {
 			log.Warnf("SendHeartbeat err = %v", err)
 		}
 	})
 
 	c.AddFunc(spec_stat, func() {
-		log.Println("stat")
-		err := backend.SendStatData(conf.Latitude, conf.Longtitude, conf.Altitude, gwid)
+		//log.Println("stat")
+		err := backend.SendStatData()
 		if err != nil {
 			log.Warnf("SendStatData err = %v", err)
 		}

@@ -20,7 +20,7 @@ type Config struct {
 }
 
 func (c Config) String() string {
-	server := fmt.Sprintf("Gateway:[%v]/[%v]/[%v]/[%v]", c.ServerAddr, c.GatewayMAC, c.Latitude, c.Longtitude, c.Altitude)
+	server := fmt.Sprintf("Gateway:[%v]/[%v]/[%v]/[%v]/[%v]", c.ServerAddr, c.GatewayMAC, c.Latitude, c.Longtitude, c.Altitude)
 
 	log := fmt.Sprintf("LOG:[win:%v]/[linux:%v]:[prefix:%v]", c.LogDirWin, c.LogDirLinux, c.LogPrefix)
 

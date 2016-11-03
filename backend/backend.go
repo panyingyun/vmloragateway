@@ -20,10 +20,12 @@ type Backend struct {
 	addr   *net.UDPAddr
 	rxChan chan gateway.PullRespPacket
 	closed bool
+	mac    [8]byte
+	stat   *gateway.Stat
 	wg     sync.WaitGroup
 }
 
-func NewBackend(bind string) (*Backend, error) {
+func NewBackend(bind string, mac string, longtitude float64, latitude float64, altitude int32) (*Backend, error) {
 
 	addr, err := net.ResolveUDPAddr("udp", bind)
 	if err != nil {
@@ -35,20 +37,36 @@ func NewBackend(bind string) (*Backend, error) {
 		return nil, errBackend
 	}
 
+	macbytes, err := covertStrToByte(mac)
+	if err != nil {
+		return nil, err
+	}
+	var gwstat gateway.Stat
+	gwstat.ACKR = 100.0
+
+	gwstat.Alti = altitude
+	gwstat.Lati = latitude
+	gwstat.Long = longtitude
+
+	gwstat.RXFW = 0
+	gwstat.RXNb = 0
+	gwstat.RXOK = 0
+
+	gwstat.DWNb = 0
+
 	b := &Backend{
 		addr:   addr,
 		conn:   connect,
 		rxChan: make(chan gateway.PullRespPacket),
 		closed: false,
+		mac:    macbytes,
+		stat:   &gwstat,
 	}
 
 	//handle receivePacket
 	go func() {
 		b.wg.Add(1)
 		b.receivePackets()
-		//		if !b.closed {
-		//			log.Fatal(err)
-		//		}
 		b.wg.Done()
 	}()
 	return b, nil
@@ -71,16 +89,12 @@ func (b *Backend) sendPullData() error {
 }
 
 //Send PullData Command(Just a heartbeat every 10ms)
-func (b *Backend) SendHeartbeat(mac string) error {
+func (b *Backend) SendHeartbeat() error {
 	//generate heartbeat...
 	var heartbeat gateway.PullDataPacket
 	heartbeat.ProtocolVersion = 2
 	heartbeat.RandomToken = uint16(rand.Uint32())
-	macbt, err := covertStrToByte(mac)
-	if err != nil {
-		return err
-	}
-	heartbeat.GatewayMAC = macbt
+	heartbeat.GatewayMAC = b.mac
 
 	//send by udp
 	hbyte, err := heartbeat.MarshalBinary()
@@ -92,37 +106,27 @@ func (b *Backend) SendHeartbeat(mac string) error {
 	if err != nil {
 		return err
 	}
+	log.WithFields(log.Fields{
+		"token": heartbeat.RandomToken,
+	}).Info("backend: PullData -->")
 	return nil
 }
 
 //Send (Just a stat every 30ms)
-func (b *Backend) SendStatData(latitude float64, longtitude float64, altitude int32, mac string) error {
+func (b *Backend) SendStatData() error {
 	//generate gateway stat ...
-	var stat gateway.PushDataPacket
-	stat.ProtocolVersion = 2
-	stat.RandomToken = uint16(rand.Uint32())
-	macbt, err := covertStrToByte(mac)
-	//log.Info("macbt = ", macbt)
-	if err != nil {
-		return err
-	}
-	stat.GatewayMAC = macbt
+	var stPkt gateway.PushDataPacket
+	stPkt.ProtocolVersion = 2
+	stPkt.RandomToken = uint16(rand.Uint32())
+
+	stPkt.GatewayMAC = b.mac
 	var payload gateway.PushDataPayload
-	var st gateway.Stat
-	st.Time = gateway.ExpandedTime(time.Now())
-	st.ACKR = 100.0
-	st.Alti = altitude
-	st.Lati = latitude
-	st.Long = longtitude
-	st.RXFW = 100
-	st.RXNb = 100
-	st.RXOK = 100
-	st.DWNb = 0
-	payload.Stat = &st
-	stat.Payload = payload
+	b.stat.Time = gateway.ExpandedTime(time.Now())
+	payload.Stat = b.stat
+	stPkt.Payload = payload
 
 	//send by udp
-	stBytes, err := stat.MarshalBinary()
+	stBytes, err := stPkt.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -130,6 +134,9 @@ func (b *Backend) SendStatData(latitude float64, longtitude float64, altitude in
 	if err != nil {
 		return err
 	}
+	log.WithFields(log.Fields{
+		"token": stPkt.RandomToken,
+	}).Info("backend: PushData -->")
 	return nil
 }
 
@@ -139,36 +146,74 @@ func (b *Backend) SendPushData() error {
 }
 
 func (b *Backend) receivePackets() error {
-	//	buf := make([]byte, 65507) // max udp data size
-	//	for {
-	//		i, addr, err := b.conn.ReadFromUDP(buf)
-	//		if err != nil {
-	//			return fmt.Errorf("gateway: read from udp error: %s", err)
-	//		}
-	//		data := make([]byte, i)
-	//		copy(data, buf[:i])
-	//		go func(data []byte) {
-	//			if err := b.handlePacket(addr, data); err != nil {
-	//				log.WithFields(log.Fields{
-	//					"data_base64": base64.StdEncoding.EncodeToString(data),
-	//					"addr":        addr,
-	//				}).Errorf("gateway: could not handle packet: %s", err)
-	//			}
-	//		}(data)
-	//	}
-
+	buf := make([]byte, 65507) // max udp data size
+	for {
+		i, err := b.conn.Read(buf)
+		if err != nil {
+			return fmt.Errorf("backend: read from udp error: %s", err)
+		}
+		data := make([]byte, i)
+		copy(data, buf[:i])
+		go func(data []byte) {
+			if err := b.handlePacket(data); err != nil {
+				log.Errorf("backend handle packet error = ", err)
+			}
+		}(data)
+	}
 	return nil
 }
 
-func (b *Backend) handlePushAck() {
+func (b *Backend) handlePacket(data []byte) error {
+	pt, err := gateway.GetPacketType(data)
+	if err != nil {
+		return err
+	}
+	//	log.WithFields(log.Fields{
+	//		"type":             pt,
+	//		"protocol_version": data[0],
+	//	}).Info("backend: received udp packet from bridge")
 
+	switch pt {
+	case gateway.PullACK:
+		return b.handlePullAck(data)
+	case gateway.PushACK:
+		return b.handlePushAck(data)
+	case gateway.PullResp:
+		return b.handlePullResp(data)
+	default:
+		return fmt.Errorf("backend: unknown packet type=%s", pt)
+	}
 }
 
-func (b *Backend) handlePullAck() {
-
+func (b *Backend) handlePushAck(data []byte) error {
+	//log.Println("handlePushAck")
+	var p gateway.PushACKPacket
+	err := p.UnmarshalBinary(data)
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{
+		"token": p.RandomToken,
+	}).Info("backend: PushAck -->")
+	return nil
 }
-func (b *Backend) handlePullResp() {
 
+func (b *Backend) handlePullAck(data []byte) error {
+	//log.Println("handlePullAck")
+	var p gateway.PullACKPacket
+	err := p.UnmarshalBinary(data)
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{
+		"token": p.RandomToken,
+	}).Info("backend: PullAck -->")
+	return nil
+}
+
+func (b *Backend) handlePullResp(data []byte) error {
+	log.Println("handlePullResp")
+	return nil
 }
 
 func covertStrToByte(mac string) ([8]byte, error) {
