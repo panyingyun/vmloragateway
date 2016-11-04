@@ -14,6 +14,16 @@ Visual Machine(Lora Gateway) connect to lora-gateway-bridge for test loar server
 	```shell
 	vmloragateway -c gateway.conf -gw F1E2D3C4B5A69999
 	```
+	
+### Support features 
+
+* PUSH_DATA/PUSH_ACK 
+* PULL_DATA/PULL_ACK
+* PULL_RESP/TX_ACK
+
+### PROTOCOL
+	[PROTOCOL](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT)
 
 ### Thanks
-Thanks to [brocaar](https://github.com/brocaar/lora-gateway-bridge)
+	Thanks to [brocaar](https://github.com/brocaar/lora-gateway-bridge)
+	
