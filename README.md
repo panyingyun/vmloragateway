@@ -22,8 +22,8 @@ Visual Machine(Lora Gateway) connect to lora-gateway-bridge for test loar server
 * PULL_RESP/TX_ACK
 
 ### PROTOCOL
-	[PROTOCOL](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT)
+[PROTOCOL](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT)
 
 ### Thanks
-	Thanks to [brocaar](https://github.com/brocaar/lora-gateway-bridge)
+Thanks to [brocaar](https://github.com/brocaar/lora-gateway-bridge)
 	
