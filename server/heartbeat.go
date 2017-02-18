@@ -5,7 +5,7 @@ import (
 	"github.com/panyingyun/vmloragateway/config"
 	"github.com/robfig/cron"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/fatih/color"
 )
 
 var spec_heartbeat = "@every 10s"
@@ -21,10 +21,9 @@ type HBServer struct {
 func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBServer {
 	c := cron.New()
 	c.AddFunc(spec_heartbeat, func() {
-		//log.Println("heartbeat")
 		err := backend.SendHeartbeat()
 		if err != nil {
-			log.Warnf("SendHeartbeat err = %v", err)
+			log.Red("SendHeartbeat err = %v", err)
 		}
 	})
 
@@ -32,7 +31,7 @@ func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBS
 		//log.Println("stat")
 		err := backend.SendStatData()
 		if err != nil {
-			log.Warnf("SendStatData err = %v", err)
+			log.Red("SendStatData err = %v", err)
 		}
 	})
 	return &HBServer{
@@ -45,10 +44,15 @@ func NewHBServer(backend *backend.Backend, conf config.Config, gwid string) *HBS
 
 func (s *HBServer) Start() {
 	s.cron.Start()
-	log.Info("heartbeat server start")
+	log.Cyan("heartbeat server start")
 }
 
 func (s *HBServer) Stop() {
 	s.cron.Stop()
-	log.Info("heartbeat server stop")
+	log.Cyan("heartbeat server stop")
+}
+
+func (s *HBServer) SendPHYLoad() {
+	s.cron.Stop()
+	log.Cyan("heartbeat server stop")
 }

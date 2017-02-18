@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/fatih/color"
 	"github.com/panyingyun/vmloragateway/gateway"
 )
 
@@ -73,12 +73,12 @@ func NewBackend(bind string, mac string, longtitude float64, latitude float64, a
 }
 
 func (b *Backend) Close() error {
-	log.Info("backend: closing gateway backend")
+	log.Cyan("backend: closing gateway backend")
 	b.closed = true
 	if err := b.conn.Close(); err != nil {
 		return err
 	}
-	log.Info("backend: handling last packets")
+	log.Cyan("backend: handling last packets")
 	b.wg.Wait()
 	return nil
 }
@@ -104,9 +104,7 @@ func (b *Backend) SendPushData(rxpk gateway.RXPK) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": rxPkt.RandomToken,
-	}).Info("backend: PushData(Join or Uplink) -->")
+	log.Green("backend: PushData(Join or Uplink) --> token = %v", rxPkt.RandomToken)
 	return nil
 }
 
@@ -128,10 +126,8 @@ func (b *Backend) sendTXACK(token uint16) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": txack.RandomToken,
-	}).Info("backend: TXACK -->")
 
+	log.Green("backend: TXACK --> token = %v ", txack.RandomToken)
 	return nil
 }
 
@@ -153,9 +149,8 @@ func (b *Backend) SendHeartbeat() error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": heartbeat.RandomToken,
-	}).Info("backend: PullData -->")
+
+	log.Green("backend: PullData --> token = %v ", heartbeat.RandomToken)
 	return nil
 }
 
@@ -181,9 +176,8 @@ func (b *Backend) SendStatData() error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": stPkt.RandomToken,
-	}).Info("backend: PushData(Stat) -->")
+
+	log.Green("backend: PushData(Stat) --> token = %v ", stPkt.RandomToken)
 	return nil
 }
 
@@ -198,7 +192,7 @@ func (b *Backend) receivePackets() error {
 		copy(data, buf[:i])
 		go func(data []byte) {
 			if err := b.handlePacket(data); err != nil {
-				log.Errorf("backend handle packet error = ", err)
+				log.Red("backend handle packet error = ", err)
 			}
 		}(data)
 	}
@@ -234,9 +228,9 @@ func (b *Backend) handlePushAck(data []byte) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": p.RandomToken,
-	}).Info("backend: PushAck -->")
+
+	log.Green("backend: PushAck --> token = %v ", p.RandomToken)
+
 	return nil
 }
 
@@ -247,27 +241,19 @@ func (b *Backend) handlePullAck(data []byte) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": p.RandomToken,
-	}).Info("backend: PullAck -->")
+
+	log.Green("backend: PullAck --> token = %v ", p.RandomToken)
 	return nil
 }
 
 func (b *Backend) handlePullResp(data []byte) error {
-	log.Println("handlePullResp")
+	//log.Println("handlePullResp")
 	var p gateway.PullRespPacket
 	err := p.UnmarshalBinary(data)
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{
-		"token": p.RandomToken,
-	}).Info("backend: PullResp -->")
-
-	log.WithFields(log.Fields{
-		"TXPK": p.Payload.TXPK,
-	}).Info("backend: PullResp -->")
-
+	log.Green("backend: PullResp --> token = %v TXPK = %v", p.RandomToken, p.Payload.TXPK)
 	b.sendTXACK(p.RandomToken)
 	b.txChan <- p.Payload.TXPK
 	return nil
