@@ -1,11 +1,12 @@
-# LoRaWAN Packet Simulator (LoRaWAN Node + LoRaWAN Gateway)
- Virtual LoRaWAN Node and LoRa Gateway connect LoRaWAN™ Network Server 
- 
-1 Gateway Status Packet (OK)
-2 Gateway HeartBeat Packet (OK)
-3 Node Join Packet (ToDo)
-4 Node Send Packet (ToDo)
-5 Node Receive Packet (ToDo)
+### LoRaWAN Packet Simulator (LoRaWAN Node + LoRaWAN Gateway)
+  
+Virtual LoRaWAN Node and LoRa Gateway connect LoRaWAN™ Network Server 
+
+* 1 Gateway Status Packet (OK)
+* 2 Gateway HeartBeat Packet (OK)
+* 3 Node Join Packet (ToDo)
+* 4 Node Send Packet (ToDo)
+* 5 Node Receive Packet (ToDo)
 
 
 ### Usage
@@ -29,8 +30,9 @@
 * PULL_RESP/TX_ACK
 
 ### PROTOCOL
-[PROTOCOL](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT)
+[Gateway PROTOCOL](https://github.com/Lora-net/packet_forwarder/blob/master/PROTOCOL.TXT)
 
 ### Thanks
 Thanks to [brocaar](https://github.com/brocaar/lora-gateway-bridge)
+
 	
