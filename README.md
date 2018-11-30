@@ -1,5 +1,12 @@
-# Visual Lora Gateway connect LoRaWAN™ Network Server 
-Visual Machine(Lora Gateway) connect to lora-gateway-bridge for test loar server benchmark or others(NS+NC+AS)
+# LoRaWAN Packet Simulator (LoRaWAN Node + LoRaWAN Gateway)
+ Virtual LoRaWAN Node and LoRa Gateway connect LoRaWAN™ Network Server 
+ 
+1 Gateway Status Packet (OK)
+2 Gateway HeartBeat Packet (OK)
+3 Node Join Packet (ToDo)
+4 Node Send Packet (ToDo)
+5 Node Receive Packet (ToDo)
+
 
 ### Usage
 
